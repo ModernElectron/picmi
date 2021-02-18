@@ -333,6 +333,11 @@ class PICMI_Cartesian2DGrid(_ClassWithInit):
       - bc_ymin: Boundary condition at min Y: One of periodic, open, dirichlet, or neumann
       - bc_ymax: Boundary condition at max Y: One of periodic, open, dirichlet, or neumann
 
+      - lower_boundary_potential: Electrostatic potential on the lower boundary
+            if Dirichlet boundary condition is used.
+      - upper_boundary_potential: Electrostatic potential on the upper boundary
+            if Dirichlet boundary condition is used.
+
       - moving_window_velocity: Moving frame velocity (vector) [m/s]
 
       - refined_regions: List of refined regions, each element being a list of the format [level, lo, hi, refinement_factor],
@@ -363,6 +368,9 @@ class PICMI_Cartesian2DGrid(_ClassWithInit):
                  nx=None, ny=None,
                  xmin=None, xmax=None, ymin=None, ymax=None,
                  bc_xmin=None, bc_xmax=None, bc_ymin=None, bc_ymax=None,
+                 lower_boundary_potential=None, upper_boundary_potential=None,
+                 potential_xmin=None, potential_xmax=None,
+                 potential_ymin=None, potential_ymax=None,
                  moving_window_velocity=None, refined_regions=[],lower_bound_particles=None, upper_bound_particles=None,
                  xmin_particles=None, xmax_particles=None, ymin_particles=None, ymax_particles=None,
                  lower_boundary_conditions_particles=None, upper_boundary_conditions_particles=None,
@@ -407,6 +415,34 @@ class PICMI_Cartesian2DGrid(_ClassWithInit):
             upper_boundary_conditions = [bc_xmax, bc_ymax]
         else:
             bc_xmax, bc_ymax = upper_boundary_conditions
+
+        # If Dirichlet boundary conditions are specified in any dimension
+        # the boundary potentials should also be given
+        if lower_boundary_potential is None:
+            lower_boundary_potential = [potential_xmin, potential_ymin]
+        if upper_boundary_potential is None:
+            upper_boundary_potential = [potential_xmax, potential_ymax]
+
+        for ii, bc in enumerate(lower_boundary_conditions):
+            if bc.lower() == 'dirichlet':
+                assert (lower_boundary_potential[ii] is not None), \
+                    Exception(
+                        'Boundary potentials have to be specified for '
+                        'dimensions with Dirichlet BC conditions'
+                    )
+            else:
+                lower_boundary_potential[ii] = 0
+        for ii, bc in enumerate(upper_boundary_conditions):
+            if bc.lower() == 'dirichlet':
+                assert (upper_boundary_potential[ii] is not None), \
+                    Exception(
+                        'Boundary potentials have to be specified for '
+                        'dimensions with Dirichlet BC conditions'
+                    )
+            else:
+                upper_boundary_potential[ii] = 0
+        potential_xmin, potential_ymin = lower_boundary_potential
+        potential_xmax, potential_ymax = upper_boundary_potential
 
         # Sanity check and init of input arguments related to particle boundary parameters
         # By default, if not specified, particle boundary values are the same as field boundary values
@@ -478,6 +514,10 @@ class PICMI_Cartesian2DGrid(_ClassWithInit):
         self.bc_xmax = bc_xmax
         self.bc_ymin = bc_ymin
         self.bc_ymax = bc_ymax
+        self.potential_xmin = potential_xmin
+        self.potential_xmax = potential_xmax
+        self.potential_ymin = potential_ymin
+        self.potential_ymax = potential_ymax
         self.xmin_particles = xmin_particles
         self.xmax_particles = xmax_particles
         self.ymin_particles = ymin_particles
